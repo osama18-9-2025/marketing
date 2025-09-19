@@ -1,4 +1,4 @@
-// firebase.js
+// firebase.js (معدل)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-analytics.js";
 import { 
@@ -25,14 +25,16 @@ import {
   get,
   child
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
-import { 
-  getStorage, 
-  ref as storageRef, 
-  uploadBytesResumable, 
-  getDownloadURL 
-} from "https://www.gstatic.com/firebasejs/9.22.1/firebase-storage.js";
 
-// Your web app's Firebase configuration
+// استيراد Supabase بدلاً من Firebase Storage
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+// تكوين Supabase بمعلوماتك
+const supabaseUrl = 'https://rrjocpzsyxefcsztazkd.supabase.co'
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJyam9jcHpzeXhlZmNzenRhemtkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgyOTEzMTgsImV4cCI6MjA3Mzg2NzMxOH0.TvUthkBc_lnDdGlHJdEFUPo4Dl2n2oHyokXZE8_wodw'
+const supabase = createClient(supabaseUrl, supabaseKey)
+
+// تكوين Firebase (ابقيه للتجزئة وقاعدة البيانات)
 const firebaseConfig = {
   apiKey: "AIzaSyAzYZMxqNmnLMGYnCyiJYPg2MbxZMt0co0",
   authDomain: "osama-91b95.firebaseapp.com",
@@ -44,21 +46,18 @@ const firebaseConfig = {
   measurementId: "G-LEM5PVPJZC"
 };
 
-// Initialize Firebase
+// تهيئة Firebase
 let app;
 let analytics;
 let auth;
 let database;
-let storage;
 
 try {
   app = initializeApp(firebaseConfig);
   analytics = getAnalytics(app);
   auth = getAuth(app);
   database = getDatabase(app);
-  storage = getStorage(app);
   
-  // جعل حالة تسجيل الدخول تستمر خلال الجلسة
   setPersistence(auth, browserSessionPersistence)
     .catch((error) => {
       console.error("Error setting persistence:", error);
@@ -68,6 +67,48 @@ try {
 } catch (error) {
   console.error("Firebase initialization error:", error);
 }
+
+// دوال Supabase Storage
+const uploadBytesResumable = async (fileRef, file) => {
+  try {
+    const { data, error } = await supabase.storage
+      .from(fileRef.bucket)
+      .upload(fileRef.fullPath, file);
+    
+    if (error) {
+      console.error("Error uploading file:", error);
+      throw error;
+    }
+    
+    return {
+      snapshot: { ref: fileRef },
+      metadata: data
+    };
+  } catch (error) {
+    console.error("Upload error:", error);
+    throw error;
+  }
+};
+
+const getDownloadURL = async (fileRef) => {
+  try {
+    const { data } = supabase.storage
+      .from(fileRef.bucket)
+      .getPublicUrl(fileRef.fullPath);
+    
+    return data.publicUrl;
+  } catch (error) {
+    console.error("Error getting download URL:", error);
+    throw error;
+  }
+};
+
+const storageRef = (storage, path) => {
+  return {
+    bucket: 'marketing', // اسم الـbucket الذي أنشأته
+    fullPath: path
+  };
+};
 
 // دالة للتحقق من الترقيات
 const checkPromotions = async (userId) => {
@@ -508,7 +549,7 @@ const updateAdminStatus = async (userId, isAdmin, currentAdminId) => {
 
 // تصدير الكائنات لاستخدامها في ملفات أخرى
 export { 
-  app, analytics, auth, database, storage,
+  app, analytics, auth, database,
   signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut,
   ref, set, push, onValue, serverTimestamp, update, remove, query, orderByChild, equalTo, get, child,
   storageRef, uploadBytesResumable, getDownloadURL,
