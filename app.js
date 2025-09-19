@@ -1,6 +1,6 @@
 // app.js - الإصدار المحسن بعد التعديلات
 import { 
-  auth, database, storage,
+  auth, database,
   onAuthStateChanged, signOut,
   ref, onValue, serverTimestamp, push, set, update, remove
 } from './firebase.js';
@@ -336,7 +336,7 @@ function filterPosts() {
             post.style.display = 'block';
             visibleCount++;
         } else {
-            post.style.display = 'none';
+        post.style.display = 'none';
         }
     });
     
@@ -430,4 +430,4 @@ function showLoading() {
 
 function hideLoading() {
     if (loadingOverlay) loadingOverlay.classList.add('hidden');
-      }
+}
