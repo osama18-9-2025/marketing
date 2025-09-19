@@ -1,6 +1,6 @@
-// add-post.js - الإصدار المحدث مع إضافة النوع والموقع
+// add-post.js - الإصدار المحدث مع Supabase Storage
 import { 
-  auth, database, storage, serverTimestamp,
+  auth, database, serverTimestamp,
   ref, push, onValue, storageRef, uploadBytesResumable, getDownloadURL
 } from './firebase.js';
 
@@ -206,8 +206,8 @@ async function handlePublishPost(e) {
 
 // رفع الصورة إلى التخزين
 async function uploadImage(file, userId) {
-    return new Promise((resolve, reject) => {
-        console.log('بدء عملية رفع الصورة إلى التخزين...');
+    try {
+        console.log('بدء عملية رفع الصورة إلى Supabase Storage...');
         
         // إضافة طابع زمني لاسم الملف لمنع التكرار
         const timestamp = Date.now();
@@ -215,42 +215,21 @@ async function uploadImage(file, userId) {
         const fileName = `post_${timestamp}.${fileExtension}`;
         
         const storagePath = `posts/${userId}/${fileName}`;
-        const imageRef = storageRef(storage, storagePath);
+        const imageRef = storageRef(null, storagePath);
         
         console.log('مسار التخزين:', storagePath);
         
-        // تحديد نوع MIME للصورة
-        const metadata = {
-            contentType: file.type
-        };
+        // رفع الملف باستخدام الدالة الجديدة
+        const uploadResult = await uploadBytesResumable(imageRef, file);
         
-        const uploadTask = uploadBytesResumable(imageRef, file, metadata);
-        
-        uploadTask.on('state_changed',
-            (snapshot) => {
-                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                uploadProgress.style.width = progress + '%';
-                console.log(`تم رفع ${progress}% من الصورة`);
-            },
-            (error) => {
-                console.error('خطأ أثناء الرفع:', error);
-                console.error('كود الخطأ:', error.code);
-                console.error('رسالة الخطأ:', error.message);
-                reject(error);
-            },
-            async () => {
-                try {
-                    console.log('تم الانتهاء من الرفع، جاري الحصول على رابط التحميل...');
-                    const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-                    console.log('تم الحصول على رابط التحميل:', downloadURL);
-                    resolve(downloadURL);
-                } catch (error) {
-                    console.error('خطأ في الحصول على رابط التحميل:', error);
-                    reject(error);
-                }
-            }
-        );
-    });
+        // الحصول على رابط التحميل
+        const downloadURL = await getDownloadURL(imageRef);
+        console.log('تم الحصول على رابط التحميل:', downloadURL);
+        return downloadURL;
+    } catch (error) {
+        console.error('خطأ في رفع الصورة:', error);
+        throw error;
+    }
 }
 
 // إعادة تعيين النموذج
@@ -280,4 +259,4 @@ function hideLoading() {
         loadingOverlay.classList.add('hidden');
         uploadProgress.style.width = '0%';
     }
-          }
+                    }
